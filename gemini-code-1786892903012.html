@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>वेताळबाबा गणेश मंडळ - हिशोब व व्यवस्थापन</title>
+  
+  <!-- PDF डाऊनलोड करण्यासाठी लायब्ररी -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #d32f2f;
+      --secondary: #ff9800;
+      --bg: #f5f5f5;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background-color: var(--bg);
+    }
+    .header {
+      text-align: center;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .summary-box {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .card-small {
+      flex: 1;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .card-small h4 { margin: 0 0 5px 0; color: #555; }
+    .card-small p { margin: 0; font-size: 1.2rem; font-weight: bold; }
+    
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    h3 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--secondary); padding-bottom: 5px; }
+    
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background-color: var(--primary);
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { opacity: 0.9; }
+    .btn-whatsapp { background-color: #25D366; width: auto; padding: 6px 12px; font-size: 12px; }
+    .btn-delete { background-color: #e53935; width: auto; padding: 6px 12px; font-size: 12px; margin-left: 5px; }
+    .btn-pdf { background-color: #0288d1; font-size: 16px; margin-top: 10px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    th { background-color: #fff3e0; color: #333; }
+    
+    .action-cell {
+      display: flex;
+      gap: 5px;
+    }
+
+    @media (max-width: 600px) {
+      .summary-box { flex-direction: column; }
+      .action-cell { flex-direction: column; }
+      .btn-whatsapp, .btn-delete { width: 100%; margin: 2px 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- संपूर्ण सेक्शन जो PDF मध्ये प्रिंट होईल -->
+  <div id="print-section">
+    <!-- हेडर -->
+    <div class="header">
+      <h1>🚩 वेताळबाबा गणेश मंडळ 🚩</h1>
+      <p>हिशोब व व्यवस्थापन पोर्टल</p>
+    </div>
+
+    <!-- सारांश (Summary Board) -->
+    <div class="summary-box">
+      <div class="card-small">
+        <h4>एकूण जमा</h4>
+        <p style="color: green;" id="total-income">₹0</p>
+      </div>
+      <div class="card-small">
+        <h4>एकूण खर्च</h4>
+        <p style="color: red;" id="total-expense">₹0</p>
+      </div>
+      <div class="card-small">
+        <h4>शिल्लक रक्कम</h4>
+        <p style="color: #0288d1;" id="net-balance">₹0</p>
+      </div>
+    </div>
+
+    <!-- हिशोब तक्ता -->
+    <div class="card">
+      <h3>दैनिक हिशोब पत्रक</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>प्रकार</th>
+            <th>तपशील</th>
+            <th>रक्कम (₹)</th>
+            <th class="no-print">कृती</th>
+          </tr>
+        </thead>
+        <tbody id="data-table">
+          <!-- डेटा ऑटोमॅटिक येईल -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- जमा / खर्च नोंदणी फॉर्म -->
+  <div class="card">
+    <h3>नवी नोंद करा</h3>
+    <select id="entry-type">
+      <option value="जमा">वर्गणी / जमा (Income)</option>
+      <option value="खर्च">खर्च (Expense)</option>
+    </select>
+    <input type="text" id="entry-name" placeholder="देणगीदाराचे नाव / खर्चाची बाब">
+    <input type="number" id="entry-amount" placeholder="रक्कम (₹)">
+    <input type="tel" id="entry-phone" placeholder="मोबाईल नंबर (WhatsApp पावत्यासाठी - ऐच्छिक)">
+    <button onclick="addRecord()">नोंद जतन करा</button>
+  </div>
+
+  <!-- PDF बटण -->
+  <button class="btn-pdf" onclick="generatePDF()">📄 हishोब पत्रक PDF डाऊनलोड करा</button>
+
+  <script>
+    let mandalRecords = JSON.parse(localStorage.getItem('vetalBabaData')) || [];
+
+    function updateDashboard() {
+      const tableBody = document.getElementById('data-table');
+      tableBody.innerHTML = '';
+
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      mandalRecords.forEach((item, index) => {
+        const amountNum = Number(item.amount) || 0;
+        if(item.type === 'जमा') totalIncome += amountNum;
+        if(item.type === 'खर्च') totalExpense += amountNum;
+
+        const row = `<tr>
+          <td style="color: ${item.type === 'जमा' ? 'green' : 'red'}; font-weight: bold;">${item.type}</td>
+          <td>${item.name}</td>
+          <td>₹${amountNum}</td>
+          <td class="action-cell no-print">
+            ${item.type === 'जमा' && item.phone ? 
+              `<button class="btn-whatsapp" onclick="sendWhatsApp('${item.name}', '${item.amount}', '${item.phone}')">WhatsApp</button>` 
+              : ''}
+            <button class="btn-delete" onclick="deleteRecord(${index})">हटवा</button>
+          </td>
+        </tr>`;
+        tableBody.innerHTML += row;
+      });
+
+      document.getElementById('total-income').innerText = `₹${totalIncome}`;
+      document.getElementById('total-expense').innerText = `₹${totalExpense}`;
+      document.getElementById('net-balance').innerText = `₹${totalIncome - totalExpense}`;
+    }
+
+    function addRecord() {
+      const type = document.getElementById('entry-type').value;
+      const name = document.getElementById('entry-name').value.trim();
+      const amount = document.getElementById('entry-amount').value.trim();
+      const phone = document.getElementById('entry-phone').value.trim();
+
+      if (!name || !amount) {
+        alert('कृपया नाव आणि रक्कम प्रविष्ट करा!');
+        return;
+      }
+
+      if (Number(amount) <= 0) {
+        alert('कृपया योग्य रक्कम प्रविष्ट करा!');
+        return;
+      }
+
+      const newEntry = { type, name, amount: Number(amount), phone };
+      mandalRecords.push(newEntry);
+      localStorage.setItem('vetalBabaData', JSON.stringify(mandalRecords));
+
+      // इनपुट बॉक्स रिकामे करा
+      document.getElementById('entry-name').value = '';
+      document.getElementById('entry-amount').value = '';
+      document.getElementById('entry-phone').value = '';
+
+      updateDashboard();
+    }
+
+    // नोंद हटवणे (Delete Record)
+    function deleteRecord(index) {
+      if(confirm('तुम्हाला ही नोंद खरोखर हटवायची आहे का?')) {
+        mandalRecords.splice(index, 1);
+        localStorage.setItem('vetalBabaData', JSON.stringify(mandalRecords));
+        updateDashboard();
+      }
+    }
+
+    // WhatsApp पावती मेसेज पाठवणे
+    function sendWhatsApp(name, amount, phone) {
+      // मोबाईल नंबरवरून स्पेस आणि डॅश काढणे
+      let cleanPhone = phone.replace(/\D/g, '');
+      if (cleanPhone.length === 10) {
+        cleanPhone = '91' + cleanPhone;
+      }
+
+      const message = `🚩 *वेताळबाबा गणेश मंडळ* 🚩%0A%0Aनमस्कार *${name}*,%0Aवेताळबाबा गणेश उत्सवासाठी तुमची *₹${amount}* ची वर्गणी जमा झाली आहे.%0A%0Aधन्यवाद! 🙏`;
+      window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+    }
+
+    // PDF जनरेट करणे
+    function generatePDF() {
+      const element = document.getElementById('print-section');
+      
+      const opt = {
+        margin:       10,
+        filename:     'वेताळबाबा_गणेश_मंडळ_हिशोब.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save();
+    }
+
+    // पेज लोड झाल्यावर डेटा दाखवा
+    updateDashboard();
+  </script>
+</body>
+</html>
